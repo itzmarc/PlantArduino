@@ -1,0 +1,122 @@
+Shad, Marc
+Comp 522
+11:00AM-12:15pm
+
+Final Project
+
+* The project that I ended up implementing was still an Arduino Plant Watering System. 
+In my proposal, I stated that I was going to use a water pump but instead I used a dc motor as a proof of concept. 
+I also used the lcd to show temperature and humidity instead of tank water level because I ended up not using a water pump.
+
+* I think it is safe to say that 100% of my project is working but improvements can always be made.
+
+* Steps:
+o First Step: Bought all the parts I needed to implement the project
+o Second Step: Looked up how each part worked (Google and YouTube)
+o Third step: Looked up how to connect each part to the Arduino and breadboard (Google and YouTube)
+o Fourth Step: Had to play with variables because sometimes it would read something as dry even though it was semi wet and sometimes read wet when it was dry.
+o Fifth Step: figured out how to connect and use dc motor because I could not use the water pump I ordered. (Google and YouTube)
+o Sixth Step: After testing that the humidity/temperature sensor worked and that the soil moisture sensor worked, I added the lcd to my breadboard
+o Seventh Step: Testing
+
+* I ended up not using the water pump, wall adapter, and MOSFET that I ordered. No extra hardware were purchased
+
+* It took me about a day to connect everything together and another day for the code (Testing included)
+
+* I used a function from online as an example/template for my waterPlants function ("//from online" in my source code)
+  https://jjbskir.medium.com/arduino-plant-watering-system-e14313438593
+
+
+Source Code:
+
+#include "DHT.h"
+#include<LiquidCrystal.h>
+#define DHTPIN 13  
+#define DHTTYPE DHT22 
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+DHT dht(DHTPIN, DHTTYPE);
+
+// PINS
+const int motorPin_PIN = 9;
+const int soilMoistureSensor_PIN = A3;
+
+const int wet = 250;
+const int dry = 500;
+const int moistureLevel = (dry - wet) / 2;
+const int startWatering = 400; 
+const int stopWatering = 300; 
+boolean watering = false;
+
+void setup() {
+  lcd.begin(16, 2);
+  Serial.begin(9600);
+  dht.begin();
+  pinMode(motorPin_PIN, OUTPUT);
+}
+
+void loop() {
+  long soilMoisture = analogRead(soilMoistureSensor_PIN);
+  float humidity = getHumid();
+  float temperature = getTemp();
+  Serial.println("Soil Status: " + readSoilMoisture(soilMoisture));
+  lcd.setCursor(0, 0);
+  Serial.println("Humidity: " + String(humidity) + " %");
+  lcd.print(String("Humid: ") + String(humidity) + String( " %"));
+  lcd.setCursor(0, 1);
+  Serial.println("Temperature: " + String(temperature) + " F");
+  lcd.print(String("Temp: ") + String(temperature) + String( " F"));
+  waterPlants(soilMoisture);
+  delay(30000); //interval between each sensor read (30 seconds)
+}
+
+float getHumid() {
+  float humidity = dht.readHumidity();
+  return humidity;
+}
+float getTemp() {
+  float temperature = dht.readTemperature(true);
+  return temperature;
+}
+
+void waterPlants(int soilMoisture) { //example from online
+  waterCheck(soilMoisture);
+  if (watering) {
+    pumpOn();
+    delay(30000); //how long it "waters" (30 seconds)
+    Serial.println("Watering Finished");
+    pumpOff();
+  }
+    Serial.println("------------------------------------------------");
+}
+
+String readSoilMoisture(int soilMoisture){
+  if (soilMoisture < dry && soilMoisture > (dry - moistureLevel)){
+    return "Dry";
+  } else if (soilMoisture > wet && soilMoisture < (wet + moistureLevel)){
+    return "Wet";
+  } else {
+    return "Place in Soil";
+  }
+}
+
+//Turn "pump" on or off
+void pumpOn() {
+  Serial.println("Water pump, aka motor, is turned on");
+  digitalWrite(motorPin_PIN, HIGH);
+}
+void pumpOff() {
+  Serial.println("Water pump, aka motor, is turned off");
+  digitalWrite(motorPin_PIN, LOW);
+}
+
+void waterCheck(int soilMoisture) {
+  if (soilMoisture > startWatering) {
+    watering = true;
+  } else if (soilMoisture < stopWatering) {
+    watering = false;
+  }
+  Serial.println(watering ? "Start watering" : "Skip watering");
+  }
+
+
+
